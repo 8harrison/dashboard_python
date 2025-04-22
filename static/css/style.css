@@ -61,6 +61,23 @@ body {
     border-radius: 6px;
 }
 
+/* Estilos para o formulário de preenchimento */
+#form-preenchimento {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+#form-preenchimento label {
+    font-weight: 500;
+}
+
+#indicador-selecionado {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
 /* Responsividade para telas menores */
 @media (max-width: 768px) {
     .card-body {

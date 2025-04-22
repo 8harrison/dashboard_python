@@ -17,7 +17,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#">Visualização</a>
+                        <a class="nav-link active" href="#" id="nav-visualizacao">Visualização</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="nav-analise">Análise</a>
@@ -112,34 +112,101 @@
             </div>
         </div>
 
-        <!-- Área do dashboard -->
-        <div class="row">
-            <!-- Área de tabela de dados -->
-            <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h5>Dados</h5>
+        <!-- Área do dashboard (visualização) -->
+        <div id="visualizacao-container">
+            <div class="row">
+                <!-- Área de tabela de dados -->
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5>Dados</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="tabela-container" class="table-responsive">
+                                <div class="alert alert-info">
+                                    Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os dados.
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="tabela-container" class="table-responsive">
-                            <div class="alert alert-info">
-                                Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os dados.
+                </div>
+                
+                <!-- Área de gráficos -->
+                <div class="col-md-7">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5>Gráficos</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="grafico-container" class="text-center">
+                                <div class="alert alert-info">
+                                    Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os gráficos.
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Área de gráficos -->
-            <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h5>Gráficos</h5>
+        </div>
+
+        <!-- Área de preenchimento de indicadores -->
+        <div id="preenchimento-container" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5>Preenchimento de Indicadores</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="form-container">
+                                <div class="alert alert-info" id="preenchimento-info">
+                                    Selecione um setor e um indicador para preencher novos dados.
+                                </div>
+                                <form id="form-preenchimento" style="display: none;">
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <h6>Adicionar novos dados para: <span id="indicador-selecionado"></span></h6>
+                                        </div>
+                                    </div>
+                                    <div id="campos-dinamicos">
+                                        <!-- Campos serão adicionados dinamicamente via JavaScript -->
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-save"></i> Salvar Dados
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" id="btn-cancelar-preenchimento">
+                                                <i class="bi bi-x"></i> Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="grafico-container" class="text-center">
-                            <div class="alert alert-info">
-                                Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os gráficos.
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de análise (para implementação futura) -->
+        <div id="analise-container" style="display: none;">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5>Análise de Indicadores</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <h6>Funcionalidade em Desenvolvimento</h6>
+                                <p>A análise avançada de indicadores será implementada em breve, permitindo:</p>
+                                <ul>
+                                    <li>Comparação entre diferentes indicadores</li>
+                                    <li>Análise de tendências e sazonalidade</li>
+                                    <li>Previsões baseadas em dados históricos</li>
+                                    <li>Identificação de correlações entre indicadores</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -152,16 +219,16 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header bg-light">
-                        <h5>Funcionalidades em Desenvolvimento</h5>
+                        <h5>Próximas Implementações</h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-warning">
-                            <h6>Próximas Implementações:</h6>
+                        <div class="alert alert-info">
+                            <h6>Em Desenvolvimento:</h6>
                             <ul>
-                                <li>Sistema de preenchimento de indicadores diretamente pelo dashboard</li>
-                                <li>Migração para banco de dados online para armazenamento centralizado</li>
+                                <li>Migração para banco de dados PostgreSQL para armazenamento centralizado</li>
                                 <li>Análises avançadas e comparativas entre indicadores</li>
                                 <li>Exportação de relatórios em diversos formatos</li>
+                                <li>Sistema de alertas para valores fora dos limites esperados</li>
                             </ul>
                         </div>
                     </div>
@@ -184,16 +251,34 @@
         </div>
     </div>
 
-    <!-- Modal de funcionalidade futura -->
-    <div class="modal fade" id="future-modal" tabindex="-1" aria-hidden="true">
+    <!-- Modal de sucesso -->
+    <div class="modal fade" id="success-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Funcionalidade em Desenvolvimento</h5>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Sucesso</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Esta funcionalidade está em desenvolvimento e será implementada em breve.</p>
+                    <p id="success-message">Operação realizada com sucesso!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de erro -->
+    <div class="modal fade" id="error-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Erro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="error-message">Ocorreu um erro durante a operação.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>

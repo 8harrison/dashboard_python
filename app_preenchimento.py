@@ -187,6 +187,27 @@ def criar_grafico(df, titulo, tipo_grafico='linha', mostrar_tendencia=False):
     
     return f'data:image/png;base64,{data}'
 
+def salvar_dados_planilha(file_path, sheet_name, df):
+    """Salva os dados do DataFrame na planilha Excel"""
+    try:
+        # Verificar se o arquivo existe
+        if os.path.exists(file_path):
+            # Carregar todas as abas da planilha
+            writer = pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace')
+            
+            # Salvar o DataFrame na aba especificada
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            # Fechar o writer para salvar as alterações
+            writer.close()
+            
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Erro ao salvar dados na planilha {file_path}: {str(e)}")
+        return False
+
 @app.route('/')
 def index():
     """Página inicial do dashboard"""
@@ -204,13 +225,16 @@ def index():
     planilhas = dados_sessao.get('planilhas', {})
     
     # Renderizar a página inicial
-    response = render_template(
+    rendered_template = render_template(
         'index.html',
         setores=SETORES,
         indicadores_por_setor=INDICADORES_POR_SETOR,
         planilhas_carregadas=list(planilhas.keys()),
         session_id=session_id
     )
+    
+    # Criar resposta a partir do template renderizado
+    response = app.make_response(rendered_template)
     
     # Definir cookie de sessão
     if not request.cookies.get('session_id'):
@@ -352,6 +376,163 @@ def get_dados():
         return jsonify({
             'success': False,
             'error': f'Não foram encontrados dados para o indicador {indicador}'
+        })
+
+@app.route('/get_estrutura_indicador', methods=['GET'])
+def get_estrutura_indicador():
+    """Endpoint para obter a estrutura de um indicador para preenchimento"""
+    session_id = request.cookies.get('session_id')
+    if not session_id or session_id not in session_data:
+        return jsonify({'success': False, 'error': 'Sessão inválida'})
+    
+    setor = request.args.get('setor')
+    indicador = request.args.get('indicador')
+    
+    if not setor or not indicador:
+        return jsonify({'success': False, 'error': 'Setor ou indicador não especificado'})
+    
+    # Buscar dados do indicador
+    dados_encontrados = False
+    df_indicador = None
+    nome_planilha_encontrada = None
+    nome_aba_encontrada = None
+    
+    # Obter dados processados da sessão
+    dados_processados = session_data[session_id].get('dados_processados', {})
+    planilhas = session_data[session_id].get('planilhas', {})
+    
+    # Primeiro, verificar nos dados processados
+    if setor in dados_processados:
+        for nome_indicador, df in dados_processados[setor].items():
+            if indicador.lower() in nome_indicador.lower():
+                df_indicador = df
+                dados_encontrados = True
+                
+                # Encontrar o nome da planilha e da aba
+                for nome_planilha, abas in planilhas.items():
+                    if setor.lower() in nome_planilha.lower():
+                        for nome_aba, df_aba in abas.items():
+                            if nome_indicador.lower() == nome_aba.lower():
+                                nome_planilha_encontrada = nome_planilha
+                                nome_aba_encontrada = nome_aba
+                                break
+                
+                break
+    
+    # Se não encontrou nos dados processados, buscar nas planilhas originais
+    if not dados_encontrados:
+        for nome_planilha, abas in planilhas.items():
+            # Verificar se o nome da planilha contém o setor
+            if setor.lower() in nome_planilha.lower():
+                for nome_aba, df in abas.items():
+                    # Verificar se o nome da aba ou conteúdo contém o indicador
+                    if (indicador.lower() in nome_aba.lower() or 
+                        any(indicador.lower() in str(col).lower() for col in df.columns)):
+                        
+                        df_indicador = df
+                        dados_encontrados = True
+                        nome_planilha_encontrada = nome_planilha
+                        nome_aba_encontrada = nome_aba
+                        break
+            
+            if dados_encontrados:
+                break
+    
+    if dados_encontrados and df_indicador is not None:
+        # Obter informações sobre as colunas
+        colunas = []
+        for col in df_indicador.columns:
+            tipo = 'texto'
+            if pd.api.types.is_numeric_dtype(df_indicador[col]):
+                tipo = 'numero'
+            elif pd.api.types.is_datetime64_any_dtype(df_indicador[col]):
+                tipo = 'data'
+            
+            colunas.append({
+                'nome': col,
+                'tipo': tipo
+            })
+        
+        return jsonify({
+            'success': True,
+            'colunas': colunas,
+            'nome_planilha': nome_planilha_encontrada,
+            'nome_aba': nome_aba_encontrada
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': f'Não foram encontrados dados para o indicador {indicador}'
+        })
+
+@app.route('/salvar_dados', methods=['POST'])
+def salvar_dados():
+    """Endpoint para salvar novos dados de um indicador"""
+    session_id = request.cookies.get('session_id')
+    if not session_id or session_id not in session_data:
+        return jsonify({'success': False, 'error': 'Sessão inválida'})
+    
+    # Obter dados do formulário
+    dados = request.json
+    if not dados:
+        return jsonify({'success': False, 'error': 'Nenhum dado recebido'})
+    
+    setor = dados.get('setor')
+    indicador = dados.get('indicador')
+    nome_planilha = dados.get('nome_planilha')
+    nome_aba = dados.get('nome_aba')
+    novos_dados = dados.get('dados')
+    
+    if not setor or not indicador or not nome_planilha or not nome_aba or not novos_dados:
+        return jsonify({'success': False, 'error': 'Dados incompletos'})
+    
+    # Verificar se a planilha existe na sessão
+    planilhas = session_data[session_id].get('planilhas', {})
+    if nome_planilha not in planilhas or nome_aba not in planilhas[nome_planilha]:
+        return jsonify({'success': False, 'error': 'Planilha ou aba não encontrada'})
+    
+    # Obter o DataFrame atual
+    df_atual = planilhas[nome_planilha][nome_aba]
+    
+    # Converter novos dados para DataFrame
+    df_novos = pd.DataFrame([novos_dados])
+    
+    # Verificar se as colunas são compatíveis
+    for col in df_novos.columns:
+        if col not in df_atual.columns:
+            return jsonify({'success': False, 'error': f'Coluna {col} não encontrada no indicador'})
+    
+    # Adicionar novos dados ao DataFrame
+    df_atualizado = pd.concat([df_atual, df_novos], ignore_index=True)
+    
+    # Atualizar o DataFrame na sessão
+    planilhas[nome_planilha][nome_aba] = df_atualizado
+    
+    # Atualizar os dados processados
+    session_data[session_id]['dados_processados'] = processar_dados(planilhas)
+    
+    # Salvar os dados na planilha original
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{nome_planilha}.xlsx")
+    if os.path.exists(file_path):
+        try:
+            # Criar um ExcelWriter com o arquivo existente
+            with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                # Salvar o DataFrame atualizado na aba
+                df_atualizado.to_excel(writer, sheet_name=nome_aba, index=False)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Dados salvos com sucesso'
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Erro ao salvar dados na planilha: {str(e)}'
+            })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Arquivo da planilha não encontrado'
         })
 
 if __name__ == '__main__':
