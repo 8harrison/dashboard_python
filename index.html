@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Indicadores - Metalúrgica</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Dashboard de Indicadores - Metalúrgica</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Visualização</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="nav-analise">Análise</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="nav-preenchimento">Preenchimento</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <!-- Área de seleção de arquivos e filtros -->
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h5>Seleção e Filtros</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form id="upload-form" enctype="multipart/form-data">
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="file-input" name="file" accept=".xlsx,.xls">
+                                <button class="btn btn-primary" type="submit" id="btn-upload">
+                                    <i class="bi bi-upload"></i> Carregar Planilha
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="upload-status">
+                            <span id="planilhas-carregadas">
+                                {% if planilhas_carregadas %}
+                                    {{ planilhas_carregadas|length }} arquivo(s) carregado(s): {{ planilhas_carregadas|join(', ') }}
+                                {% else %}
+                                    Nenhum arquivo carregado
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="select-setor">Setor:</label>
+                            <select class="form-select" id="select-setor">
+                                {% for setor in setores %}
+                                    <option value="{{ setor }}">{{ setor }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="select-indicador">Indicador:</label>
+                            <select class="form-select" id="select-indicador">
+                                <!-- Será preenchido via JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Tipo de Gráfico:</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipo-grafico" id="grafico-linha" value="linha" checked>
+                                <label class="form-check-label" for="grafico-linha">Linha</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipo-grafico" id="grafico-barra" value="barra">
+                                <label class="form-check-label" for="grafico-barra">Barra</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="tipo-grafico" id="grafico-pizza" value="pizza">
+                                <label class="form-check-label" for="grafico-pizza">Pizza</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="check-tendencia">
+                                <label class="form-check-label" for="check-tendencia">Linha de Tendência</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group d-grid">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary" id="btn-atualizar">
+                                <i class="bi bi-arrow-repeat"></i> Atualizar Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área do dashboard -->
+        <div class="row">
+            <!-- Área de tabela de dados -->
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5>Dados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="tabela-container" class="table-responsive">
+                            <div class="alert alert-info">
+                                Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os dados.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Área de gráficos -->
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5>Gráficos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="grafico-container" class="text-center">
+                            <div class="alert alert-info">
+                                Selecione um setor e um indicador, e clique em "Atualizar Dashboard" para visualizar os gráficos.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de funcionalidades futuras -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5>Funcionalidades em Desenvolvimento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <h6>Próximas Implementações:</h6>
+                            <ul>
+                                <li>Sistema de preenchimento de indicadores diretamente pelo dashboard</li>
+                                <li>Migração para banco de dados online para armazenamento centralizado</li>
+                                <li>Análises avançadas e comparativas entre indicadores</li>
+                                <li>Exportação de relatórios em diversos formatos</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de carregamento -->
+    <div class="modal fade" id="loading-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-3" id="loading-message">Processando dados, por favor aguarde...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de funcionalidade futura -->
+    <div class="modal fade" id="future-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Funcionalidade em Desenvolvimento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Esta funcionalidade está em desenvolvimento e será implementada em breve.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
